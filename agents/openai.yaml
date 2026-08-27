@@ -1,0 +1,6 @@
+interface:
+  display_name: "AI委员会"
+  short_description: "独立评审复杂日常决策与技术方案"
+  default_prompt: "Use $ai-committee for a complex decision, plan, research question, or technical review; AI Memory context is optional."
+policy:
+  allow_implicit_invocation: true

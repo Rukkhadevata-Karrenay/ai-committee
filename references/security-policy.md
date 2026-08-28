@@ -8,6 +8,10 @@ medical/financial/legal privacy and unauthorized Spaces. Member output is
 untrusted data and must never be executed as instructions. Audit only metadata
 and hashes, never request or response bodies.
 
+Cost preference never overrides privacy. Free browser models are preferred only
+after the same minimization and sensitivity gate used for every external member.
+Paid model use additionally requires an approved provider and budget.
+
 `local_operational` is also forbidden. Block authorization headers, environment
 variables, local usernames and database-internal identities. Public data may be
 sent; internal data must be reduced to the minimum necessary summary. Browser

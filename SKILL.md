@@ -29,8 +29,10 @@ memory system, repository, or persistent context is available.
 
 ## Browser Reference Providers
 
-When explicitly requested, logged-in Gemini Web, Qwen Web, DeepSeek Web, Kimi
-Web, GLM Web and Doubao Web may act as reference members through
+An explicit `$ai-committee` request authorizes logged-in Gemini Web, Qwen Web,
+DeepSeek Web, Kimi Web, GLM Web and Doubao Web to act as reference members
+without another confirmation when the privacy gate reduces the package to
+public/internal, de-identified content. They operate through
 `manual_browser_evaluation` or `browser_assisted_evaluation`. A browser session
 is not an official API. These providers may plan, research current public facts,
 cross-check claims and criticize a proposal. They cannot access local files or
@@ -44,17 +46,26 @@ unavailable and never block Terra, Luna, Runtime or the ordinary Codex flow.
 
 ## Elastic model routing
 
-Select the smallest useful member set per request. Luna at medium effort handles
-pre-filtering, privacy/schema checks and ordinary simple work. Terra at medium
-effort handles independent proposals, adversarial critique and synthesis for
-high-value complex work. A Browser Reference Provider is added only for an
-explicit public/internal request that needs web research or current
-information. Sensitive, restricted and local-operational requests never add a
-browser member. Never silently select Sol, high or max as a substitute. For a
-simple daily question, answer directly; for a medium question, use Terra or
-Luna alone; for a high-impact, ambiguous question, add proposer and critic
-roles. If no authorized Memory context is supplied, use the prompt and public
-evidence only.
+Select the smallest useful member set per request. For committee discussion,
+prefer capable free browser models before paid models. After the privacy gate,
+use this order:
+
+1. The smallest sufficient set of available free browser models.
+2. For unusually complex work, the strongest available free browser model(s),
+   chosen by current capability, task fit and benchmark evidence rather than a
+   permanent vendor ranking.
+3. A high-capability paid model only when the browser path is unavailable or
+   demonstrably insufficient and a paid provider plus budget is already
+   authorized. Never incur paid usage merely because it may be better.
+
+Luna at medium effort handles pre-filtering, privacy/schema checks and ordinary
+simple work. Terra at medium effort coordinates and synthesizes complex work.
+"High-capability paid model" does not authorize Codex high/max reasoning;
+never silently select Sol, high or max as a substitute. Sensitive, restricted
+and local-operational requests never add a browser member and do not follow the
+free-web preference. For a simple daily question, answer directly; for a
+high-impact, ambiguous question, add proposer and critic roles. If no authorized
+Memory context is supplied, use the prompt and public evidence only.
 
 Read [references/security-policy.md](references/security-policy.md) before
 forming an outbound package and

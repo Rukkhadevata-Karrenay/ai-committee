@@ -1,137 +1,139 @@
-# AI委员会（AI Committee）
+# AI Committee
 
-面向 Codex 的角色化决策评审 Skill。它把一个复杂问题拆给协调者、独立提案者、反方批评者、隐私审查者和验证者，让最终结果同时包含方案、反例、假设、证据缺口、风险与下一步验证。
+English | [简体中文](README.zh-CN.md)
 
-AI委员会可以独立用于日常工作，不依赖 AI Memory。若环境中存在经过授权的记忆上下文，它可以作为可选输入；记忆系统、数据库或其他持久化服务都不是安装和运行前提。
+A role-based decision-review Skill for Codex. It splits a complex question across a coordinator, an independent proposer, an adversarial critic, a privacy reviewer, and a verifier, so the final result carries the proposal alongside counterexamples, assumptions, evidence gaps, risks, and a next verification step.
 
-> AI委员会不是“让多个模型投票”。模型意见只提供建议，事实仍需一手来源、实际测试或其他可验证证据确认。
+AI Committee works standalone for everyday work and does not depend on AI Memory. If an authorized memory context exists in the environment, it can be used as an optional input; a memory system, database, or other persistent store is never a prerequisite for installing or running it.
 
-## 它解决什么问题
+> AI Committee is not "let several models vote." Model opinions are advisory only — facts still need to be confirmed by first-party sources, actual tests, or other verifiable evidence.
 
-单模型往往会快速收敛到一个看似合理的答案，但复杂决策通常还需要：
+## What problem it solves
 
-- 彼此独立的备选方案，而不是同一答案的不同措辞；
-- 主动寻找反例、失败路径和遗漏条件；
-- 区分已验证事实、判断、假设与未知项；
-- 在给出建议的同时说明如何验证；
-- 在调用外部模型前限制数据范围，避免把私人内容无条件外发。
+A single model tends to converge quickly on an answer that looks reasonable, but complex decisions usually need more than that:
 
-AI委员会把这些要求写成可重复执行的角色流程和统一输出结构。
+- Independent alternatives, not the same answer restated in different words;
+- Active hunting for counterexamples, failure paths, and missing conditions;
+- A clear line between verified facts, judgment, assumptions, and unknowns;
+- A stated way to verify each recommendation, not just the recommendation itself;
+- Scope limits on outbound data before calling external models, so private content isn't leaked unconditionally.
 
-## 适合使用的场景
+AI Committee turns these requirements into a repeatable role workflow and a unified output structure.
 
-- 系统架构、API、数据模型和技术选型；
-- 复杂项目计划、迁移方案和恢复设计；
-- 高价值文档、产品方案或研究结论复核；
-- 需要独立提案与 adversarial critique（对抗式批评）的决策；
-- 需要识别权限、隐私、并发、数据丢失和失败恢复风险的任务；
-- 需要当前公开资料时，引入浏览器参考模型进行交叉检查；
-- 你已经有一个倾向，但希望委员会刻意挑战它。
+## When to use it
 
-以下任务通常不需要委员会：
+- System architecture, API design, data models, and technology choices;
+- Complex project plans, migration strategies, and recovery designs;
+- Review of high-value documents, product proposals, or research conclusions;
+- Decisions that need independent proposals and adversarial critique;
+- Tasks that need permission, privacy, concurrency, data-loss, or failure-recovery risks identified;
+- Cases needing current public information, where browser reference models cross-check facts;
+- You already lean toward an answer but want the committee to actively challenge it.
 
-- 一行命令、简单翻译、基础格式调整；
-- 可直接查证的单一事实；
-- 普通文件读取、哈希、权限判断和重复内容检查；
-- 没有明显取舍的例行操作。
+The following usually don't need a committee:
 
-## 核心原理
+- A one-line command, a simple translation, or basic formatting;
+- A single fact that can be checked directly;
+- Routine file reads, hashing, permission checks, or duplicate-content checks;
+- Routine operations with no meaningful trade-off.
 
-### 1. 先判断是否值得组建委员会
+## Core design
 
-Skill 会根据问题的价值、复杂度、歧义和风险选择最小可用路径：
+### 1. Decide whether a committee is worth forming at all
+
+The Skill picks the smallest viable path based on the question's value, complexity, ambiguity, and risk:
 
 ```text
-简单、低风险
-    → 单模型直接处理
+Simple, low risk
+    → handled directly by a single model
 
-中等复杂度
-    → 一个主模型 + 必要的结构/隐私检查
+Moderate complexity
+    → one primary model + necessary structure/privacy checks
 
-高价值、存在明显取舍或失败风险
-    → 独立提案 + 反方批评 + 验证综合
+High value, with a clear trade-off or failure risk
+    → independent proposal + adversarial critique + verified synthesis
 
-需要委员会讨论或当前公开信息
-    → 隐私检查后优先免费网页模型
+Needs committee discussion or current public information
+    → free web models preferred, after the privacy check
 
-问题过于复杂且免费网页路径不足
-    → 高智能网页模型优先于高智能付费模型
+Question too complex for the free web path
+    → high-capability web models before high-capability paid models
 ```
 
-它不会为了“看起来像多智能体”而让所有模型回答每一个问题。
+It never routes every question through every model just to look like a multi-agent system.
 
-### 2. 各角色先独立工作，再统一综合
+### 2. Each role works independently, then a single synthesis
 
-| 角色 | 职责 | 不应做什么 |
+| Role | Responsibility | Must not do |
 |---|---|---|
-| Coordinator | 明确问题、缩小范围、选择最小成员集合 | 预先暗示唯一正确答案 |
-| Independent proposer | 在看不到其他成员答案的情况下提出方案 | 复述协调者的偏好 |
-| Adversarial critic | 寻找反例、缺失证据、边界条件和失败模式 | 为了反对而虚构风险 |
-| Privacy reviewer | 检查外发内容、敏感度和输出结构 | 扩大授权范围 |
-| Verifier / Synthesizer | 对照意见，保留共识、分歧和未验证假设 | 把多数意见当成事实证明 |
+| Coordinator | Clarify the question, narrow scope, pick the smallest sufficient member set | Hint at a single "correct" answer up front |
+| Independent proposer | Propose without seeing other members' answers | Echo the coordinator's preference |
+| Adversarial critic | Find counterexamples, missing evidence, edge cases, and failure modes | Invent risks just to object |
+| Privacy reviewer | Check outbound content, sensitivity, and output structure | Widen the authorized scope |
+| Verifier / Synthesizer | Reconcile opinions, preserve consensus, dissent, and unverified assumptions | Treat majority opinion as proof |
 
-独立提案可以降低成员相互模仿造成的伪共识；反方角色负责发现“所有人都顺着同一个前提回答”的问题；验证者负责把最终建议落到可执行测试上。
+Independent proposals reduce false consensus caused by members echoing each other; the adversarial role catches cases where everyone answered from the same unquestioned premise; the verifier grounds the final recommendation in an executable test.
 
-### 3. 不采用简单多数投票
+### 3. No simple majority vote
 
-多个模型可能共享训练数据、提示偏差和错误前提，因此“一致同意”不代表正确。最终综合必须回答：
+Multiple models can share training data, prompt bias, and false premises, so agreement doesn't mean correctness. The final synthesis must answer:
 
-- 哪些内容有来源或测试支持；
-- 哪些只是模型判断；
-- 哪些成员不同意，原因是什么；
-- 还缺少什么证据；
-- 下一步最小验证动作是什么。
+- What is backed by a source or a test;
+- What is only model judgment;
+- Which members disagreed, and why;
+- What evidence is still missing;
+- What the smallest next verification step is.
 
-### 4. 弹性模型路由
+### 4. Elastic model routing
 
-委员会讨论采用“免费优先、能力递进”的顺序：
+Committee discussion follows a "free first, escalate by capability" order:
 
-1. 先通过本地隐私检查，把问题缩减为允许外发的 public/internal 最小问题包；
-2. 优先调用能够完成任务的免费网页模型，使用满足任务所需的最小成员数量；
-3. 问题过于复杂时，先选择当前能力最强、任务匹配度最高且有基准证据的网页模型，而不是固定某一家厂商；
-4. 只有免费网页模型不可用或已证明不足时，才考虑高智能付费模型；
-5. 付费模型必须已有明确授权、Provider 配置和预算，不能仅因为“可能更好”就自动产生费用。
+1. Run the local privacy check first, reducing the question to the smallest public/internal package allowed to leave the machine;
+2. Prefer free web models capable of the task, using the smallest sufficient member count;
+3. For unusually complex questions, pick the currently strongest, best task-fit web model with benchmark evidence, rather than a fixed vendor;
+4. Consider a high-capability paid model only when free web models are unavailable or proven insufficient;
+5. A paid model requires explicit authorization, provider configuration, and budget already in place — never invoked automatically just because it "might be better."
 
-因此，复杂问题的能力优先级是：
+So for complex questions, the capability order is:
 
 ```text
-高智能免费网页模型
-    > 已授权的高智能付费模型
-    > 不完整结果或无依据的强行综合
+high-capability free web models
+    > authorized high-capability paid models
+    > an incomplete or unsupported forced synthesis
 ```
 
-同时保留以下本地分工：
+Local division of labor is preserved alongside this:
 
-- Luna / medium：预筛选、结构检查、隐私检查和简单差异提取；
-- Terra / medium：协调复杂任务并完成最终综合；
-- “高智能付费模型”描述的是模型能力和付费渠道，不代表允许 Codex 使用 high/max reasoning；
-- 不静默替换为 Sol、high 或 max；
-- 某个成员不可用时标记为不完整并降级，不阻断普通单模型任务。
+- Luna / medium: pre-filtering, structure checks, privacy checks, and simple diff extraction;
+- Terra / medium: coordinates complex tasks and produces the final synthesis;
+- "High-capability paid model" describes model capability and payment channel — it does not authorize Codex to use high/max reasoning;
+- Never silently substituted with Sol, high, or max;
+- An unavailable member is marked incomplete and the run degrades gracefully; it never blocks an ordinary single-model task.
 
-具体模型是否可用取决于运行当前 Skill 的 Codex 环境。这个仓库不包含模型账号、API Key、浏览器登录信息或调用额度。
+Which models are actually available depends on the Codex environment running the Skill. This repository ships no model accounts, API keys, browser login state, or usage quota.
 
-## 浏览器参考成员
+## Browser reference members
 
-当用户显式调用 `$ai-committee`，并且问题可以缩减为非敏感的 public/internal 内容时，这次调用已经授权委员会优先使用可用的免费网页参考成员，无需针对每个网页模型再次确认。登录状态下的 Gemini、Qwen、DeepSeek、Kimi、GLM 或豆包网页都可以作为候选。
+When a user explicitly invokes `$ai-committee` and the question can be reduced to non-sensitive public/internal content, that invocation already authorizes the committee to prefer available free web reference members without asking again per model. Logged-in Gemini, Qwen, DeepSeek, Kimi, GLM, or Doubao web sessions can all be candidates.
 
-网页模型的实际优先顺序根据当前可用性、任务类型和验证过的能力动态决定，不永久写死厂商排名。敏感、restricted 或本地操作内容不会因为“免费优先”而被发送到网页模型。
+The actual priority among web models is decided dynamically by current availability, task type, and demonstrated capability — it is never a permanent vendor ranking. Sensitive, restricted, or local-operational content is never sent to web models just because free models are preferred.
 
-浏览器成员适合：
+Browser members are suited for:
 
-- 查询当前公开信息；
-- 独立规划；
-- 交叉检查公开事实；
-- 批评已有方案。
+- Looking up current public information;
+- Independent planning;
+- Cross-checking public facts;
+- Critiquing an existing proposal.
 
-浏览器成员不是稳定 API，也不是执行代理。它们不能读取本地文件、运行命令、修改代码或数据库，也不能成为最终 Authority。遇到登录失效、验证码、超时或页面变化时，应标记该成员不可用并继续本地流程。
+Browser members are not a stable API and not an execution agent. They cannot read local files, run commands, modify code or databases, or act as the final authority. On login expiry, CAPTCHA, timeout, or a UI change, that member is marked unavailable and the local flow continues.
 
-## 安装
+## Installation
 
-### 前置条件
+### Prerequisites
 
-- 已安装支持 Skills 的 Codex；
-- 本机可以使用 Git；
-- 安装后重新打开 Codex，使 Skill 目录被重新发现。
+- Codex with Skills support installed;
+- Git available locally;
+- Reopen Codex after installing so the Skill directory is rediscovered.
 
 ### Windows PowerShell
 
@@ -147,81 +149,88 @@ git clone https://github.com/Rukkhadevata-Karrenay/ai-committee.git \
   "$HOME/.codex/skills/ai-committee"
 ```
 
-### 更新
+### Updating
 
 ```powershell
 git -C "$env:USERPROFILE\.codex\skills\ai-committee" pull --ff-only
 ```
 
-## 使用方式
+## Usage
 
-### 显式调用
-
-```text
-$ai-committee
-帮我评审这个方案，给出独立方案、反方意见、证据需求和下一步验证。
-```
-
-### 自然语言调用
-
-```text
-使用 AI委员会比较这三个方案，并保留不同意见。
-```
-
-### 推荐提示模板
+### Explicit invocation
 
 ```text
 $ai-committee
-
-问题：<需要评审的决策>
-目标：<希望最终实现什么>
-已知事实：<已经验证的事实>
-当前倾向：<可选，允许委员会挑战>
-硬约束：<预算、时间、平台、兼容性等>
-允许使用的公开资料：<可选>
-
-请输出：
-1. 独立备选方案；
-2. 支持理由与反方意见；
-3. 未验证假设和所需证据；
-4. 安全或隐私风险；
-5. 推荐方案及下一步最小验证。
+Review this plan for me — give an independent proposal, counterarguments,
+evidence needed, and a next verification step.
 ```
 
-## 使用示例
+### Natural-language invocation
 
-### 技术选型
+```text
+Use AI Committee to compare these three approaches and keep the dissenting views.
+```
+
+### Recommended prompt template
 
 ```text
 $ai-committee
-比较 SQLite、PostgreSQL 和事件存储服务作为本地优先应用的 Authority。
-重点检查迁移、并发、备份恢复和运维成本。
+
+Question: <the decision to review>
+Goal: <what you want to achieve>
+Known facts: <facts already verified>
+Current leaning: <optional, lets the committee challenge it>
+Hard constraints: <budget, time, platform, compatibility, etc.>
+Public sources allowed: <optional>
+
+Please output:
+1. Independent alternative proposals;
+2. Supporting reasons and counterarguments;
+3. Unverified assumptions and the evidence needed;
+4. Security or privacy risks;
+5. A recommended approach and the smallest next verification step.
 ```
 
-### 计划审查
+## Examples
+
+### Technology choice
 
 ```text
 $ai-committee
-审查这个八周学习计划。找出无法持续执行的假设、过度安排和缺少验收证据的环节，给出更稳健的版本。
+Compare SQLite, PostgreSQL, and an event-store service as the authority
+for a local-first app. Focus on migration, concurrency, backup/recovery,
+and operational cost.
 ```
 
-### 挑战当前倾向
+### Plan review
 
 ```text
 $ai-committee
-我倾向采用方案 A。请让独立提案者在不知道该倾向的前提下给方案，再由反方批评者重点寻找 A 的失败场景。
+Review this eight-week study plan. Find assumptions that won't hold up,
+over-scheduling, and steps missing acceptance evidence; give a sturdier version.
 ```
 
-### 需要当前公开信息
+### Challenging a current leaning
 
 ```text
 $ai-committee
-这是公开、非敏感问题。允许使用浏览器参考成员核对当前官方文档和版本信息；请给出来源，并把无法验证的结论单独列出。
+I lean toward option A. Have the independent proposer answer without
+knowing that leaning, then have the adversarial critic focus on finding
+failure scenarios for A.
 ```
 
-## 输出结构
+### Needing current public information
 
-委员会建议使用以下统一结构：
+```text
+$ai-committee
+This is a public, non-sensitive question. Browser reference members may
+be used to check current official docs and version info; cite sources,
+and list anything unverifiable separately.
+```
+
+## Output structure
+
+The committee's recommendation follows this unified structure:
 
 ```json
 {
@@ -237,60 +246,60 @@ $ai-committee
 }
 ```
 
-| 字段 | 含义 |
+| Field | Meaning |
 |---|---|
-| `proposal` | 最终建议或候选方案 |
-| `supporting_reasons` | 支持理由及其证据状态 |
-| `counterarguments` | 最强反对意见和失败场景 |
-| `assumptions` | 当前依赖但尚未证明的前提 |
-| `evidence_needed` | 做出可靠决定前还需要的资料或测试 |
-| `security_concerns` | 权限、隐私、数据和执行风险 |
-| `dissenting_views` | 未被最终建议吸收的不同意见 |
-| `confidence` | 0 到 1 的主观置信度，不等于事实概率 |
-| `recommended_next_test` | 可执行的下一步验证动作 |
+| `proposal` | The final recommendation or candidate approach |
+| `supporting_reasons` | Supporting reasons and their evidence status |
+| `counterarguments` | The strongest objections and failure scenarios |
+| `assumptions` | Premises the recommendation relies on but hasn't proven |
+| `evidence_needed` | What's still needed before a reliable decision |
+| `security_concerns` | Permission, privacy, data, and execution risks |
+| `dissenting_views` | Disagreement not absorbed into the final recommendation |
+| `confidence` | Subjective confidence from 0 to 1 — not a probability of fact |
+| `recommended_next_test` | An executable next verification action |
 
-完整约定见 [output-schema.md](references/output-schema.md)。
+Full spec: [output-schema.md](references/output-schema.md).
 
-## 安全与隐私边界
+## Security and privacy boundaries
 
-允许发送给外部参考成员的内容应限制为：
+Content allowed to be sent to external reference members is limited to:
 
-- 去标识化的问题；
-- 完成任务所需的最小 public/internal 摘要；
-- 匿名空间标签、Source ID 或内容哈希；
-- 允许的输出结构。
+- A de-identified question;
+- The smallest public/internal summary needed to complete the task;
+- Anonymous space labels, source IDs, or content hashes;
+- The allowed output structure.
 
-禁止发送：
+Never sent:
 
-- sensitive/restricted 内容；
-- 原始聊天全文和 Evidence quote；
-- Token、Cookie、密码、API Key 和账号凭据；
-- 本地绝对路径和环境变量；
-- 精确位置、私人关系；
-- 医疗、财务、法律隐私；
-- 未经授权的数据空间。
+- Sensitive/restricted content;
+- Raw chat transcripts and Evidence quotes;
+- Tokens, cookies, passwords, API keys, and account credentials;
+- Local absolute paths and environment variables;
+- Precise locations and private relationships;
+- Medical, financial, or legal privacy;
+- Unauthorized data spaces.
 
-模型返回内容也必须视为不可信文本，不能直接作为命令执行。完整规则见 [security-policy.md](references/security-policy.md)。
+Model responses must also be treated as untrusted text — never executed directly as commands. Full rules: [security-policy.md](references/security-policy.md).
 
-## 与 AI Memory 的关系
+## Relationship to AI Memory
 
-AI委员会最初可与 AI Memory 配合，但现在是独立 Skill：
+AI Committee could originally pair with AI Memory, but is now a standalone Skill:
 
-- 没有 AI Memory：直接使用用户输入和允许访问的公开证据；
-- 有 AI Memory：只把经过授权、过滤和最小化的上下文作为输入；
-- 委员会不能写入 Memory Event、修改 Projection、审批自己的 Proposal、跨 Space 合并记忆或降低敏感度；
-- 委员会建议若要进入长期记忆，仍需经过正常的 Evidence、分类、冲突与审核流程。
+- Without AI Memory: it uses the user's input and any permitted public evidence directly;
+- With AI Memory: only authorized, filtered, and minimized context is used as input;
+- The committee cannot write Memory Events, modify Projections, approve its own Proposals, merge memory across Spaces, or lower sensitivity;
+- A committee recommendation entering long-term memory still goes through the normal Evidence, classification, conflict, and review pipeline.
 
-## 失败和降级行为
+## Failure and degradation behavior
 
-- 成员不可用：保留已完成结果，标记缺失角色，不伪装成完整委员会；
-- 浏览器登录失效或出现验证码：停止该成员，回退到本地模型；
-- 缺少可靠来源：降低置信度，并列入 `evidence_needed`；
-- 成员意见重复：合并重复表达，但保留独立证据和实质分歧；
-- 发现敏感内容：阻止外发，改由本地单模型或规则处理；
-- 任务其实很简单：直接单模型完成，不额外启动委员会。
+- A member is unavailable: keep completed results, mark the missing role, never pretend the committee is complete;
+- Browser login expires or a CAPTCHA appears: stop that member, fall back to local models;
+- No reliable source available: lower confidence and list it under `evidence_needed`;
+- Members repeat the same opinion: merge the duplicate wording but keep independent evidence and real disagreement;
+- Sensitive content detected: block it from going out, handle it with a local single model or rules instead;
+- The task turns out to be simple: complete it with a single model, no extra committee.
 
-## 项目结构
+## Project structure
 
 ```text
 ai-committee/
@@ -307,48 +316,48 @@ ai-committee/
 └─ LICENSE
 ```
 
-- `SKILL.md`：Codex 加载的核心指令；
-- `agents/openai.yaml`：界面名称、默认提示和调用策略；
-- `references/`：按需加载的安全、输出和基准规则；
-- `scripts/validate_committee_output.py`：验证结构化输出是否包含必需字段。
+- `SKILL.md`: the core instructions Codex loads;
+- `agents/openai.yaml`: interface name, default prompt, and invocation policy;
+- `references/`: security, output, and benchmark rules loaded on demand;
+- `scripts/validate_committee_output.py`: validates that structured output contains the required fields.
 
-## 校验结构化输出
+## Validating structured output
 
 ```powershell
 Get-Content result.json | python scripts/validate_committee_output.py
 ```
 
-成功时输出：
+On success:
 
 ```json
 {"valid": true}
 ```
 
-缺少字段或 `confidence` 不在 0 到 1 之间时，脚本返回非零退出码。
+The script exits non-zero if fields are missing or `confidence` is outside 0 to 1.
 
-## 开发与自检
+## Development and self-check
 
-修改 Skill 后，可使用 Codex 自带的 Skill 校验器检查目录和 frontmatter：
+After modifying the Skill, use Codex's built-in Skill validator to check the directory and frontmatter:
 
 ```powershell
 python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" .
 ```
 
-提交前建议同时检查：
+Before committing, also check:
 
-- `SKILL.md` 中的名称是否为 `ai-committee`；
-- `agents/openai.yaml` 的默认提示是否使用 `$ai-committee`；
-- references 中是否出现本机路径、凭据或私人数据；
-- 输出校验器的有效和无效样例是否符合预期。
+- Whether the name in `SKILL.md` is `ai-committee`;
+- Whether `agents/openai.yaml`'s default prompt uses `$ai-committee`;
+- Whether `references/` contains local paths, credentials, or private data;
+- Whether the output validator's valid and invalid samples still behave as expected.
 
-## 当前边界
+## Current boundaries
 
-- 这是 Codex Skill，不是独立运行的多模型 SaaS；
-- 仓库不提供外部模型账号、API Key、费用额度或浏览器登录；
-- 网页模型属于参考成员，不保证长期可用；
-- 委员会不会自动证明结论正确；
-- 自动触发的可靠性仍应通过真实任务基准持续评估；
-- 最终修改、发布、数据库写入和权限变更仍由当前执行代理与用户授权控制。
+- This is a Codex Skill, not a standalone multi-model SaaS;
+- The repository ships no external model accounts, API keys, usage credits, or browser login state;
+- Web models are reference members, not guaranteed to stay available long-term;
+- The committee never proves a conclusion correct by itself;
+- The reliability of automatic triggering still needs ongoing evaluation against real task benchmarks;
+- Final edits, publishing, database writes, and permission changes remain controlled by the executing agent and the user's authorization.
 
 ## License
 
